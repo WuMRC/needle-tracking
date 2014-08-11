@@ -9,7 +9,6 @@ needleVideoFile = VideoReader(needleVideoInfo.filename);
 % Select region of interest
 figure, imshow(read(needleVideoFile,1))
 
-% needleVideo = read(needleVideoFile);
 
 hBox = imrect;
 roiPosition = wait(hBox);
@@ -21,12 +20,20 @@ roi_yind = round([roiPosition(1), roiPosition(1)+roiPosition(3), ...
     roiPosition(1)+roiPosition(3), roiPosition(1)]);
 close
 
+
+% Which method
+method = 1; % Frame by frame
+method = 2; % All at once
+
+
 % Create region of interest image
-% imageroi = I(roi_xind(1):roi_xind(3),roi_yind(1):roi_yind(2),:,1);
+needleVideo = read(needleVideoFile);
+needleVideoROI = permute(needleVideo(...
+    roi_xind(1):roi_xind(3),roi_yind(1):roi_yind(2),1,:), [1 2 4 3]);
 
 
 
-clear x1 x2 img1 img2 motion img12 motionMag
+clear x1 x2 img1 img2 motion img12 motionMag velocityField
 %%
 
 % Block matching
@@ -42,6 +49,10 @@ opticalFlow = vision.OpticalFlow('Method','Lucas-Kanade',...
     'ReferenceFrameSource','Input port');
 
 
+% METHOD ONE - FRAME BY FRAME
+if method < 1.5
+% This method currently reads the video one frame at a time
+% It may be easier to read the whole video in at once then work with that
 for indFrame = 1:25%needleVideo.NumberOfFrames-1
     % Read in the images from the video
     currentFrameData = read(needleVideoFile,indFrame);
@@ -84,7 +95,51 @@ imagesc(img12Avg); hold on;
 
 quiver(X(:), Y(:), real(motionAvg(:)), imag(motionAvg(:)), 0); hold off;
 
+end
 
+
+% METHOD TWO - ALL AT ONCE
+if method > 1.5
+  
+    
+    
+    kalmanGain = 0.95;
+    needleVideoROI_FILT = ...
+        kalmanStackFilter(single(needleVideoROI),kalmanGain);
+%     implay(needleVideoROI_FILT./max(max(max(needleVideoROI_FILT))))
+    
+    for indFrame = 1:needleVideo.NumberOfFrames-1
+        % Read in the images from the video
+        currentFrameData = needleVideoROI_FILT(:,:,indFrame);
+        nextFrameData = needleVideoROI_FILT(:,:,indFrame+1);
+        
+        % Detect motion in the grid
+        motion(:,:,indFrame) = step(hbm, currentFrameData, nextFrameData);
+        
+        img12(:,:,indFrame) = step(halphablend,nextFrameData,currentFrameData);
+        
+        velocityField(:,:,indFrame) = double(step(opticalFlow,...
+            currentFrameData,nextFrameData));
+        
+        
+    end
+    
+    
+    motionMag = sqrt(double(real(motion).^2 ...
+        + imag(motion).^2));
+    
+    motionAvg = mean(motion,3);
+    motionMagAvg = mean(motionMag,3);
+    img12Avg = mean(img12,3);
+    velocityFieldAvg = mean(velocityField,3);
+    
+    [X, Y] = meshgrid(1:blockSize:size(currentFrameDataROI, 2),...
+        1:blockSize:size(currentFrameDataROI, 1));
+    imagesc(img12Avg); hold on;
+    
+    quiver(X(:), Y(:), real(motionAvg(:)), imag(motionAvg(:)), 0); hold off;
+    
+end
 
 
 
