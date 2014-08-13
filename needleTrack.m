@@ -22,7 +22,7 @@ close
 
 
 % Which method
-method = 1; % Frame by frame
+% method = 1; % Frame by frame
 method = 2; % All at once
 
 
@@ -108,7 +108,7 @@ if method > 1.5
         kalmanStackFilter(single(needleVideoROI),kalmanGain);
 %     implay(needleVideoROI_FILT./max(max(max(needleVideoROI_FILT))))
     
-    for indFrame = 1:needleVideo.NumberOfFrames-1
+    for indFrame = 1:25%needleVideo.NumberOfFrames-1
         % Read in the images from the video
         currentFrameData = needleVideoROI_FILT(:,:,indFrame);
         nextFrameData = needleVideoROI_FILT(:,:,indFrame+1);
