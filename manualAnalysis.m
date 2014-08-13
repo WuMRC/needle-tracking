@@ -6,6 +6,8 @@ addpath(genpath(needleVideoInfo.pathname))
 
 needleVideoFile = VideoReader(needleVideoInfo.filename);
 
+here's an example of change
+
 % Select region of interest
 figure, imshow(read(needleVideoFile,1))
 
