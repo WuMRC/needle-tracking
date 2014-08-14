@@ -53,7 +53,7 @@ opticalFlow = vision.OpticalFlow('Method','Lucas-Kanade',...
 if method < 1.5
 % This method currently reads the video one frame at a time
 % It may be easier to read the whole video in at once then work with that
-for indFrame = 1:25%needleVideo.NumberOfFrames-1
+for indFrame = 1:3%needleVideo.NumberOfFrames-1
     % Read in the images from the video
     currentFrameData = read(needleVideoFile,indFrame);
     nextFrameData = read(needleVideoFile,indFrame+1);
@@ -91,7 +91,7 @@ velocityFieldAvg = mean(velocityField,3);
 
 [X, Y] = meshgrid(1:blockSize:size(currentFrameDataROI, 2),...
     1:blockSize:size(currentFrameDataROI, 1));
-imagesc(img12Avg); hold on;
+imshow(img12Avg./(max(max(max(img12Avg))))); hold on;
 
 quiver(X(:), Y(:), real(motionAvg(:)), imag(motionAvg(:)), 0); hold off;
 
@@ -108,7 +108,7 @@ if method > 1.5
         kalmanStackFilter(single(needleVideoROI),kalmanGain);
 %     implay(needleVideoROI_FILT./max(max(max(needleVideoROI_FILT))))
     
-    for indFrame = 1:25%needleVideo.NumberOfFrames-1
+    for indFrame = 1:needleVideoFile.NumberOfFrames-1
         % Read in the images from the video
         currentFrameData = needleVideoROI_FILT(:,:,indFrame);
         nextFrameData = needleVideoROI_FILT(:,:,indFrame+1);
