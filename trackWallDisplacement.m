@@ -51,14 +51,19 @@ level = graythresh(videoROI(:,:,1));
 
 
 BW = zeros(nRows,nCols,nFrames);
-BWflip = zeros(nCols,nRows,nFrames);
-topEdge = zeros(nCols,nFrames);
-displacement = zeros(nCols,nFrames);
-displacementS = zeros(nCols,nFrames);
-displacementSS = zeros(nCols,nFrames);
+% BWflip = zeros(nCols,nRows,nFrames);
+% vesselWidth = zeros(nRows,nFrames);
+% vesselWidthSMOOTH = zeros(nRows,nFrames);
+bottomEdge = zeros(indRows,nFrames);
+bottomEdgeSMOOTH = zeros(nCols,nFrames);
+topEdge = zeros(indRows,nFrames);
+topEdgeSMOOTH = zeros(indRows,nFrames);
+% displacement = zeros(nCols,nFrames);
+% displacementS = zeros(nCols,nFrames);
+% displacementSS = zeros(nCols,nFrames);
 
-kalmanGain = 0.95;
-videoROI_FILT = kalmanStackFilter(single(videoROI),kalmanGain);
+% kalmanGain = 0.95;
+% videoROI_FILT = kalmanStackFilter(single(videoROI),kalmanGain);
 
 framesToAnalyze = nFrames;
 
@@ -66,35 +71,84 @@ for indFrames = 1:framesToAnalyze%nFrames
     level = graythresh(videoROI(:,:,indFrames));
     BW(:,:,indFrames) = im2bw(videoROI(:,:,indFrames),level);
 %     BWflip(:,:,indFrames) = imrotate(BW(:,:,indFrames),90);
-    for indCol = 1:nCols
-        topWall = find(BWflip(:,indCol,indFrames)==0,1,'first');
-        
-        if size(topWall,1) == 1
-            topEdge(indCol,indFrames) = topWall;
-        elseif size(topWall,1) == 0
-            topEdge(indCol,indFrames) = NaN;
+    for indRows = 1:nRows
+        bottomWall = find(BW(indRows,:,indFrames)==0,1,'first');
+        if size(bottomWall,1) == 1
+            bottomEdge(indRows,indFrames) = bottomWall;
+        elseif size(bottomWall,1) == 0
+            bottomEdge(indRows,indFrames) = NaN;
         end
-        topEdgeSMOOTH(indCol,indFrames) = smooth(topEdge(indCol,indFrames),5);
-    
+        bottomEdgeSMOOTH(indRows,indFrames) = ...
+            smooth(bottomEdge(indRows,indFrames),20);
+        
+        topWall = find(BW(indRows,:,indFrames)==0,1,'last');
+        if size(topWall,1) == 1
+            topEdge(indRows,indFrames) = topWall;
+        elseif size(topWall,1) == 0
+            topEdge(indRows,indFrames) = NaN;
+        end
+        topEdgeSMOOTH(indRows,indFrames) = ...
+            smooth(topEdge(indRows,indFrames),20);
+%         
+%         vesselWidth(indRows,indFrames) = (topEdgeSMOOTH(indRows,indFrames)...
+%             - bottomEdgeSMOOTH(indRows,indFrames)).*distancePerPixel;
+        
+%         if vesselWidth(indRows,indFrames) >= 1.4
+%             vesselWidth(indRows,indFrames) = NaN;
+%             
+%         end
+%         
+%         vesselWidthSMOOTH(indRows,indFrames) = ...
+%             smooth(vesselWidth(indRows,indFrames),20);
+
+%     
     end
-    displacement(:,indFrames) = (topEdgeSMOOTH(:,indFrames) ...
-        - topEdgeSMOOTH(:,1))*distancePerPixel;
-    displacementS(:,indFrames) = smooth(displacement(:,indFrames),20);
+    
+     
+    
+%     displacement(:,indFrames) = (topEdgeSMOOTH(:,indFrames) ...
+%         - topEdgeSMOOTH(:,1))*distancePerPixel;
+%     displacementS(:,indFrames) = smooth(displacement(:,indFrames),20);
 end
 
-for indCol = 1:nCols
-    % Delete if you have changed the size of framesToAnalyze
-    displacementSS(indCol,:) = smooth(displacementS(indCol,:),3);
-end
+vesselWidth = (topEdgeSMOOTH - bottomEdgeSMOOTH).*distancePerPixel;
+vesselWidth(vesselWidth>=1.4) = NaN;
+vesselWidth(vesselWidth<=0.5) = NaN;
+
+
+
+% for indRows = 1:nCols
+%     % Delete if you have changed the size of framesToAnalyze
+%     displacementSS(indRows,:) = smooth(displacementS(indRows,:),3);
+% end
     
 
 %%
  
-framesToAnalyze = 10*fps;
-framesToStart = 0.5*fps;
+framesToAnalyze = 390;
+framesToStart = 10;
 
 mesh( time(framesToStart:framesToAnalyze), edgeLength,displacementS(:,framesToStart:framesToAnalyze))
 
 xlabel('Time [s]')
 ylabel('Length Along Edge [mm]')
+zlabel('Displacement [µm]')
+
+%%
+
+
+mesh(bottomEdgeSMOOTH(1:350,1:390))
+xlabel('Time [s]')
+ylabel('Length Along Edge [mm]')
+zlabel('Displacement [µm]')
+
+figure, mesh(topEdgeSMOOTH(1:350,1:350))
+xlabel('Time [s]')
+ylabel('Length Along Edge [mm]')
+zlabel('Displacement [µm]')
+
+%%
+figure, mesh(vesselWidth(1:350,75:400))
+xlabel('Frame [#]')
+ylabel('Vessel Width [mm]')
 zlabel('Displacement [µm]')
