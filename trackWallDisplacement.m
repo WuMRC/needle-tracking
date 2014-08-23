@@ -13,7 +13,7 @@ addpath(genpath(videoInfo.pathname));
 videoFile = VideoReader(videoInfo.filename);
 
 %% STEP 2 - Look through frames/regions of interest
-implay(videoInfo.filename)
+% implay(videoInfo.filename)
 
 % Select region of interest
 figure, imshow(read(videoFile,1))
@@ -50,14 +50,14 @@ level = graythresh(videoROI(:,:,1));
 
 
 
-BW = zeros(nRows,nCols,nFrames);
+BW = zeros(nRows,nCols-6,nFrames);
 % BWflip = zeros(nCols,nRows,nFrames);
-% vesselWidth = zeros(nRows,nFrames);
-% vesselWidthSMOOTH = zeros(nRows,nFrames);
-bottomEdge = zeros(indRows,nFrames);
-bottomEdgeSMOOTH = zeros(nCols,nFrames);
-topEdge = zeros(indRows,nFrames);
-topEdgeSMOOTH = zeros(indRows,nFrames);
+vesselWidth = zeros(nRows,nFrames);
+vesselWidthSMOOTH = zeros(nRows,nFrames);
+bottomEdge = zeros(nRows,nFrames);
+bottomEdgeSMOOTH = zeros(nRows,nFrames);
+topEdge = zeros(nRows,nFrames);
+topEdgeSMOOTH = zeros(nRows,nFrames);
 % displacement = zeros(nCols,nFrames);
 % displacementS = zeros(nCols,nFrames);
 % displacementSS = zeros(nCols,nFrames);
@@ -69,7 +69,7 @@ framesToAnalyze = nFrames;
 
 for indFrames = 1:framesToAnalyze%nFrames
     level = graythresh(videoROI(:,:,indFrames));
-    BW(:,:,indFrames) = im2bw(videoROI(:,:,indFrames),level);
+    BW(:,:,indFrames) = im2bw(videoROI(:,1:nCols-6,indFrames),level);
 %     BWflip(:,:,indFrames) = imrotate(BW(:,:,indFrames),90);
     for indRows = 1:nRows
         bottomWall = find(BW(indRows,:,indFrames)==0,1,'first');
@@ -90,20 +90,19 @@ for indFrames = 1:framesToAnalyze%nFrames
         topEdgeSMOOTH(indRows,indFrames) = ...
             smooth(topEdge(indRows,indFrames),20);
 %         
-%         vesselWidth(indRows,indFrames) = (topEdgeSMOOTH(indRows,indFrames)...
-%             - bottomEdgeSMOOTH(indRows,indFrames)).*distancePerPixel;
+        vesselWidth(indRows,indFrames) = (topEdgeSMOOTH(indRows,indFrames)...
+            - bottomEdgeSMOOTH(indRows,indFrames)).*distancePerPixel;
         
-%         if vesselWidth(indRows,indFrames) >= 1.4
-%             vesselWidth(indRows,indFrames) = NaN;
-%             
-%         end
-%         
-%         vesselWidthSMOOTH(indRows,indFrames) = ...
-%             smooth(vesselWidth(indRows,indFrames),20);
+        if vesselWidth(indRows,indFrames) >= 1.4
+            vesselWidth(indRows,indFrames) = NaN;
+        elseif vesselWidth(indRows,indFrames) <= 0.5
+            vesselWidth(indRows,indFrames) = NaN;
+        end
 
-%     
     end
     
+    vesselWidthSMOOTH(:,indFrames) = ...
+        smooth(vesselWidth(:,indFrames),10);
      
     
 %     displacement(:,indFrames) = (topEdgeSMOOTH(:,indFrames) ...
@@ -111,9 +110,9 @@ for indFrames = 1:framesToAnalyze%nFrames
 %     displacementS(:,indFrames) = smooth(displacement(:,indFrames),20);
 end
 
-vesselWidth = (topEdgeSMOOTH - bottomEdgeSMOOTH).*distancePerPixel;
-vesselWidth(vesselWidth>=1.4) = NaN;
-vesselWidth(vesselWidth<=0.5) = NaN;
+% vesselWidth = (topEdgeSMOOTH - bottomEdgeSMOOTH).*distancePerPixel;
+% vesselWidth(vesselWidth>=1.4) = NaN;
+% vesselWidth(vesselWidth<=0.4) = NaN;
 
 
 
@@ -152,3 +151,20 @@ figure, mesh(vesselWidth(1:350,75:400))
 xlabel('Frame [#]')
 ylabel('Vessel Width [mm]')
 zlabel('Displacement [µm]')
+
+
+%%
+
+figure, plot(smooth(bottomEdgeSMOOTH(88,:),24))
+hold on, plot(smooth(topEdgeSMOOTH(88,:),24),'r')
+
+
+
+%%
+time = (0:nFrames-1)./fps;
+figure, plot(time(200:500),smooth(vesselWidth(113+9,200:500),25),...
+    'Color',[0 0 0],'LineWidth',2)
+hold on, plot(time(200:500),smooth(vesselWidth(91,200:500),25),...
+    'Color', [0.25 0.25 0.25],'LineWidth',2)
+plot(time(200:500),smooth(vesselWidth(113-52,200:500),25),...
+    'Color', [0.5 0.5 0.5],'LineWidth',2)
