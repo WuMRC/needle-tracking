@@ -50,14 +50,14 @@ level = graythresh(videoROI(:,:,1));
 
 
 
-BW = zeros(nRows,nCols,nFrames);
+BW = zeros(nRows,nCols-6,nFrames);
 % BWflip = zeros(nCols,nRows,nFrames);
-vesselWidth = zeros(nCols,nFrames);
-vesselWidthSMOOTH = zeros(nCols,nFrames);
-bottomEdge = zeros(nCols,nFrames);
-bottomEdgeSMOOTH = zeros(nCols,nFrames);
-topEdge = zeros(nCols,nFrames);
-topEdgeSMOOTH = zeros(nCols,nFrames);
+vesselWidth = zeros(nRows,nFrames);
+vesselWidthSMOOTH = zeros(nRows,nFrames);
+bottomEdge = zeros(nRows,nFrames);
+bottomEdgeSMOOTH = zeros(nRows,nFrames);
+topEdge = zeros(nRows,nFrames);
+topEdgeSMOOTH = zeros(nRows,nFrames);
 % displacement = zeros(nCols,nFrames);
 % displacementS = zeros(nCols,nFrames);
 % displacementSS = zeros(nCols,nFrames);
@@ -69,34 +69,34 @@ framesToAnalyze = nFrames;
 
 for indFrames = 1:framesToAnalyze%nFrames
     level = graythresh(videoROI(:,:,indFrames));
-    BW(:,:,indFrames) = im2bw(videoROI(:,:,indFrames),level);
+    BW(:,:,indFrames) = im2bw(videoROI(:,1:nCols-6,indFrames),level);
 %     BWflip(:,:,indFrames) = imrotate(BW(:,:,indFrames),90);
-    for indCols = 1:nCols
-         bottomWall = find(BW(:,indCols,indFrames)==0,1,'first');
+    for indRows = 1:nRows
+        bottomWall = find(BW(indRows,:,indFrames)==0,1,'first');
         if size(bottomWall,1) == 1
-            bottomEdge(indCols,indFrames) = bottomWall;
+            bottomEdge(indRows,indFrames) = bottomWall;
         elseif size(bottomWall,1) == 0
-            bottomEdge(indCols,indFrames) = NaN;
+            bottomEdge(indRows,indFrames) = NaN;
         end
-        bottomEdgeSMOOTH(indCols,indFrames) = ...
-            smooth(bottomEdge(indCols,indFrames),20);
+        bottomEdgeSMOOTH(indRows,indFrames) = ...
+            smooth(bottomEdge(indRows,indFrames),20);
         
-        topWall = find(BW(:,indCols,indFrames)==0,1,'last');
+        topWall = find(BW(indRows,:,indFrames)==0,1,'last');
         if size(topWall,1) == 1
-            topEdge(indCols,indFrames) = topWall;
+            topEdge(indRows,indFrames) = topWall;
         elseif size(topWall,1) == 0
-            topEdge(indCols,indFrames) = NaN;
+            topEdge(indRows,indFrames) = NaN;
         end
-        topEdgeSMOOTH(indCols,indFrames) = ...
-            smooth(topEdge(indCols,indFrames),20);
+        topEdgeSMOOTH(indRows,indFrames) = ...
+            smooth(topEdge(indRows,indFrames),20);
 %         
-        vesselWidth(indCols,indFrames) = (topEdgeSMOOTH(indCols,indFrames)...
-            - bottomEdgeSMOOTH(indCols,indFrames)).*distancePerPixel;
+        vesselWidth(indRows,indFrames) = (topEdgeSMOOTH(indRows,indFrames)...
+            - bottomEdgeSMOOTH(indRows,indFrames)).*distancePerPixel;
         
-        if vesselWidth(indCols,indFrames) >= 1.4
-            vesselWidth(indCols,indFrames) = NaN;
-        elseif vesselWidth(indCols,indFrames) <= 0.5
-            vesselWidth(indCols,indFrames) = NaN;
+        if vesselWidth(indRows,indFrames) >= 1.4
+            vesselWidth(indRows,indFrames) = NaN;
+        elseif vesselWidth(indRows,indFrames) <= 0.5
+            vesselWidth(indRows,indFrames) = NaN;
         end
 
     end
