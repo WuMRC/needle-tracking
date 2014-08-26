@@ -93,7 +93,7 @@ for indFrames = 1:framesToAnalyze%nFrames
         vesselWidth(indRows,indFrames) = (topEdgeSMOOTH(indRows,indFrames)...
             - bottomEdgeSMOOTH(indRows,indFrames)).*distancePerPixel;
         
-        if vesselWidth(indRows,indFrames) >= 1.4
+        if vesselWidth(indRows,indFrames) >= 400
             vesselWidth(indRows,indFrames) = NaN;
         elseif vesselWidth(indRows,indFrames) <= 0.5
             vesselWidth(indRows,indFrames) = NaN;
